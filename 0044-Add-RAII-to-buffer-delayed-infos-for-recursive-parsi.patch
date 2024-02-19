@@ -1,0 +1,45 @@
+From 10ba61ecdf26cd8e0761decbfaaeae961f1bfdf5 Mon Sep 17 00:00:00 2001
+From: Axel Naumann <Axel.Naumann@cern.ch>
+Date: Fri, 22 Jul 2016 18:04:04 +0200
+Subject: [PATCH 44/52] Add RAII to buffer delayed infos, for recursive
+ parsing.
+
+---
+ clang/include/clang/Sema/Sema.h | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/clang/include/clang/Sema/Sema.h b/clang/include/clang/Sema/Sema.h
+index 71b38b0df098..67e9644d87c6 100644
+--- a/clang/include/clang/Sema/Sema.h
++++ b/clang/include/clang/Sema/Sema.h
+@@ -1156,6 +1156,27 @@ public:
+     }
+   };
+ 
++  class DelayedInfoRAII {
++    Sema &S;
++    SmallVector<std::pair<const CXXMethodDecl*, const CXXMethodDecl*>, 2>
++      DelayedOverridingExceptionSpecChecks;
++    SmallVector<std::pair<FunctionDecl*, FunctionDecl*>, 2>
++      DelayedEquivalentExceptionSpecChecks;
++  public:
++    DelayedInfoRAII(Sema& S): S(S) {
++      std::swap(S.DelayedOverridingExceptionSpecChecks,
++                DelayedOverridingExceptionSpecChecks);
++      std::swap(S.DelayedEquivalentExceptionSpecChecks,
++                DelayedEquivalentExceptionSpecChecks);
++    }
++    ~DelayedInfoRAII() {
++      std::swap(S.DelayedOverridingExceptionSpecChecks,
++                DelayedOverridingExceptionSpecChecks);
++      std::swap(S.DelayedEquivalentExceptionSpecChecks,
++                DelayedEquivalentExceptionSpecChecks);
++    }
++  };
++
+   /// WeakUndeclaredIdentifiers - Identifiers contained in \#pragma weak before
+   /// declared. Rare. May alias another identifier, declared or undeclared.
+   ///
+-- 
+2.34.1
+
